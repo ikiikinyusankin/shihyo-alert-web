@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; media-src 'self' blob: data:; img-src 'self' data:">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#16191e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="指標アラート">
+<title>指標アラート</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"></path><path d="M10 20a2 2 0 0 0 4 0"></path></svg>
+    <div class="brand-name">指標アラート</div>
+  </div>
+  <div class="clock">
+    <div class="clock-date" id="clockDate"></div>
+    <div class="muted">現在 <span class="mono clock-time" id="clockTime">--:--</span> JST</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <main class="main">
+    <div class="title-row o1">
+      <div class="title-left">
+        <h1>本日の経済指標</h1>
+        <div class="group">
+          <div class="group-label">取得元</div>
+          <div class="group" id="sourceButtons"></div>
+        </div>
+      </div>
+      <div class="counts" id="counts"></div>
+    </div>
+
+    <div class="status-row o2">
+      <div class="status-line" id="statusLine" aria-live="polite"></div>
+      <button type="button" class="btn small" id="reloadBtn">再読み込み</button>
+    </div>
+
+    <section class="card standby o3" id="standby"></section>
+
+    <section class="card holiday-strip o5">
+      <div class="holiday-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"></rect><path d="M3.5 10h17"></path><path d="M8 3v4"></path><path d="M16 3v4"></path><path d="M10 13.5l4 4"></path><path d="M14 13.5l-4 4"></path></svg>
+        <h2>本日の休場</h2>
+      </div>
+      <div class="holiday-list" id="holidays"></div>
+    </section>
+
+    <details class="card filter-box o6" id="filterBox">
+      <summary>絞り込み<span class="muted" id="filterSummary"></span></summary>
+      <div class="filter-bar">
+      <div class="group">
+        <div class="group-label">通貨</div>
+        <div class="group" id="curChips"></div>
+      </div>
+      <div class="filter-right">
+        <div class="group">
+          <div class="group-label">重要度</div>
+          <div class="group" id="impButtons"></div>
+        </div>
+        <label class="check-label">
+          <input type="checkbox" id="onlyOn">
+          アラートONのみ表示
+        </label>
+      </div>
+      </div>
+    </details>
+
+    <div class="o7" id="listArea"></div>
+  </main>
+
+  <aside class="side">
+    <div id="ringPanel"></div>
+
+    <section class="card pad next-card o4" id="nextCard">
+      <h2 class="card-sub">次のアラート</h2>
+      <div id="nextAlert"></div>
+    </section>
+
+    <section class="card pad-list o8">
+      <h2 class="card-title">本日のアラート予定</h2>
+      <div id="alertList"></div>
+      <div class="cal-box">
+        <button type="button" class="btn wide" id="calBtn">ONの指標をカレンダーに登録</button>
+        <div class="hint" id="calHint">アプリを閉じているときやロック中は、このアプリからは鳴らせません。カレンダーに登録しておくと、iPhoneの通知で知らせます。</div>
+      </div>
+    </section>
+
+    <section class="card pad o9">
+      <h2 class="card-title">鳴らすタイミング</h2>
+      <div class="hint">ONにした指標すべてに共通で適用されます</div>
+      <div class="lead-buttons" id="leadButtons"></div>
+    </section>
+
+    <section class="card pad sound o10">
+      <h2 class="card-title">アラート音</h2>
+      <div class="row">
+        <label class="sr-only" for="soundSelect">アラート音の種類</label>
+        <select id="soundSelect">
+          <option value="chime">チャイム</option>
+          <option value="bell">ベル</option>
+          <option value="beep">ビープ</option>
+          <option value="file">自分のファイル</option>
+        </select>
+        <button type="button" class="btn" id="testSound">テスト再生</button>
+      </div>
+      <div class="row">
+        <label class="btn file-btn" for="fileInput">ファイルを選択</label>
+        <input type="file" id="fileInput" class="sr-only" accept="audio/*">
+        <div class="file-name" id="fileName"></div>
+      </div>
+      <fieldset class="repeat">
+        <legend>繰り返し</legend>
+        <div class="row tight">
+          <label class="check-label">
+            <input type="radio" name="repeat" id="repCount" value="count">
+            指定した回数だけ鳴らす
+          </label>
+          <div class="count-box">
+            <label class="sr-only" for="repN">鳴らす回数</label>
+            <input type="number" id="repN" min="1" max="99" inputmode="numeric">
+            <span>回</span>
+          </div>
+        </div>
+        <label class="check-label">
+          <input type="radio" name="repeat" id="repUntil" value="until">
+          チェックするまで鳴らし続ける
+        </label>
+      </fieldset>
+      <button type="button" class="switch-row" role="switch" id="muteSwitch" aria-checked="false">
+        <span>すべて消音（画面表示のみ）</span>
+        <span class="track"><span class="knob"></span></span>
+      </button>
+    </section>
+  </aside>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
